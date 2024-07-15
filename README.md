@@ -1,19 +1,18 @@
-# Titanic-Machine-Learning-from-Disaster
-In this challenge, we ask you to build a predictive model that answers the question: “what sorts of people were more likely to survive when Titanic sank?” using passenger data (ie name, age, gender, socio-economic class, etc).
-
-
-
-
 ```python
 import numpy as np 
 import pandas as pd
+import matplotlib.pyplot as plt
+%matplotlib inline
+import seaborn as sns
+sns.set() # setting seaborn default for plots
 
+from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 ```
 
-## Step 1. Import data
+## Step 1. Load dataset
 
-We use pandas to import our traning and test dataset, then we'll try to understand the data. 
+We use pandas to import our traning and test datasets, then we'll try to understand the data. 
 
 
 ```python
@@ -31,7 +30,7 @@ print('Test shape:', test.shape)
 
 ```python
 train.info()
-test.info()
+train.head()
 ```
 
     <class 'pandas.core.frame.DataFrame'>
@@ -53,56 +52,7 @@ test.info()
      11  Embarked     889 non-null    object 
     dtypes: float64(2), int64(5), object(5)
     memory usage: 83.7+ KB
-    <class 'pandas.core.frame.DataFrame'>
-    RangeIndex: 418 entries, 0 to 417
-    Data columns (total 11 columns):
-     #   Column       Non-Null Count  Dtype  
-    ---  ------       --------------  -----  
-     0   PassengerId  418 non-null    int64  
-     1   Pclass       418 non-null    int64  
-     2   Name         418 non-null    object 
-     3   Sex          418 non-null    object 
-     4   Age          332 non-null    float64
-     5   SibSp        418 non-null    int64  
-     6   Parch        418 non-null    int64  
-     7   Ticket       418 non-null    object 
-     8   Fare         417 non-null    float64
-     9   Cabin        91 non-null     object 
-     10  Embarked     418 non-null    object 
-    dtypes: float64(2), int64(4), object(5)
-    memory usage: 36.1+ KB
     
-
-### Data Dictionary 
-
-| Variable    | Definition                             | Key                                         |
-|-------------|----------------------------------------|---------------------------------------------|
-| survival    | Survival                               | 0 = No, 1 = Yes                             |
-| pclass      | Ticket class                           | 1 = 1st, 2 = 2nd, 3 = 3rd                   |
-| sex         | Sex                                    |                                             |
-| Age         | Age in years                           |                                             |
-| sibsp       | # of siblings / spouses aboard the Titanic |                                             |
-| parch       | # of parents / children aboard the Titanic |                                             |
-| ticket      | Ticket number                          |                                             |
-| fare        | Passenger fare                         |                                             |
-| cabin       | Cabin number                           |                                             |
-| embarked    | Port of Embarkation                    
-
-#### Rows and columns
-
-We can see that there are 891 rows and 12 columns in our training set. test set contains 418 rows and 11 columns.
-
-## Step 2. Data pre-processing 
-
-In this step we'll try to analyze our input to see if we need to pre-process data like normalization or we can create new features based on existing ones and so on.
-* Initial data inspectation. Using `train.head()` and `train. info()`
-* Descriptive Statistics. Use panda function `train.describe()` to see the statidstical properties of the data
-* Missing data analysis. Find missing vsalues using pandas function `train.isnull().sum`
-
-
-```python
-train.head()
-```
 
 
 
@@ -337,8 +287,40 @@ test.head()
 
 
 
+### Data Dictionary 
+
+ * Rows and columns :  We can see that there are 891 rows and 12 columns in our training set. Test set contains 418 rows and 11 columns.
+   
+| Variable    | Definition                             | Key                                         |
+|-------------|----------------------------------------|---------------------------------------------|
+| survival    | Survival                               | 0 = No, 1 = Yes                             |
+| pclass      | Ticket class                           | 1 = 1st, 2 = 2nd, 3 = 3rd                   |
+| sex         | Sex                                    |                                             |
+| Age         | Age in years                           |                                             |
+| sibsp       | # of siblings / spouses aboard the Titanic |                                             |
+| parch       | # of parents / children aboard the Titanic |                                             |
+| ticket      | Ticket number                          |                                             |
+| fare        | Passenger fare                         |                                             |
+| cabin       | Cabin number                           |                                             |
+| embarked    | Port of Embarkation                    
+
+
+
+
+
+## Step 2. Feature engineering and data preproccessing
+
+Now we'll try to analyze the input to see if we need some preprocessing steps in our data:
+
+* Descriptive Statistics. Use `train.describe()` to see the statistical properties of the data
+* Handle missing values. Find missing values using `train.isnull().sum`. 
+* Encode categorical variables. We use `train['column_name'].map()` function to map a categorical features to numeric.
+* Remove unneccesary columns.
+* Scale numerical features
+
 
 ```python
+# Descriptive statistics
 train.describe()
 ```
 
@@ -461,6 +443,7 @@ train.describe()
 
 
 ```python
+# Handle missing values, train set
 train.isnull().sum()
 ```
 
@@ -483,11 +466,142 @@ train.isnull().sum()
 
 
 
+We can see that Age values is missing for 177 rows from training set, Cabin values are also missing in many rows, 687 and 2 rows missing Embarked information.
+
+#### Bar chart for categorical features
+* Sex
+* Embarked
+* PClass
+* SibSp
+* Parch( # of parents and children)
+
 
 ```python
-test.isnull().sum()
-test['Survived'] = ''
-test.head()
+def bar_chart(feature):
+    survived = train[train['Survived']==1][feature].value_counts()
+    dead = train[train['Survived']==0][feature].value_counts()
+    df = pd.DataFrame([survived,dead])
+    df.index = ['Survived','Dead']
+    df.plot(kind='bar',stacked=True, figsize=(10,5))
+```
+
+
+```python
+bar_chart('Sex')
+```
+
+
+    
+![png](Titanic%20Survival%20Prediction%20Model_files/Titanic%20Survival%20Prediction%20Model_11_0.png)
+    
+
+
+The Chart confirms **Women** more likely survivied than **Men**
+
+
+```python
+bar_chart('Pclass')
+```
+
+
+    
+![png](Titanic%20Survival%20Prediction%20Model_files/Titanic%20Survival%20Prediction%20Model_13_0.png)
+    
+
+
+The Chart confirms **1st class** more likely survivied than other classes
+
+The Chart confirms **3rd class** more likely dead than other classes
+
+
+```python
+bar_chart('SibSp')
+```
+
+
+    
+![png](Titanic%20Survival%20Prediction%20Model_files/Titanic%20Survival%20Prediction%20Model_15_0.png)
+    
+
+
+The Chart confirms a person aboarded with **more than 2 siblings or spouse** more likely survived
+
+The Chart confirms **a person aboarded without siblings or spouse** more likely dead
+
+
+```python
+bar_chart('Parch')
+```
+
+
+    
+![png](Titanic%20Survival%20Prediction%20Model_files/Titanic%20Survival%20Prediction%20Model_17_0.png)
+    
+
+
+The Chart confirms a person aboarded from **C** slightly more likely survived
+
+The Chart confirms a person aboarded from **Q** more likely dead
+
+The Chart confirms a person aboarded from **S** more likely dead
+
+#### Handle missing values 
+
+
+```python
+# Combine train and test dataset
+train_test = [train,test]
+
+for data in train_test:
+    data['Title'] = data['Name'].str.extract(r' ([A-Za-z]+)\.', expand=False) #extract title from name
+
+```
+
+
+```python
+# Map categorical features to numbers
+
+sex_mapping = {"male": 0, "female": 1}
+title_mapping = {"Mr": 0, "Miss": 1, "Mrs": 2, 
+                 "Master": 3, "Dr": 3, "Rev": 3, "Col": 3, "Major": 3, "Mlle": 3,"Countess": 3,
+                 "Ms": 3, "Lady": 3, "Jonkheer": 3, "Don": 3, "Dona" : 3, "Mme": 3,"Capt": 3,"Sir": 3 }
+
+for data in train_test:
+    data['Sex'] = data['Sex'].map(sex_mapping)
+    data['Title'] = data['Title'].map(title_mapping)
+```
+
+
+```python
+# Median imputation for 'Age' adn 'Fare'. Fill missing 'Embarked' values with 'S' value.
+train['Age'] = train['Age'].fillna(train.groupby(['Title','Pclass'])['Age'].transform('median'))
+test['Age'] = test['Age'].fillna(test.groupby(['Title', 'Pclass'])['Age'].transform('median'))
+
+train['Fare'] = train["Fare"].fillna(train.groupby("Pclass")["Fare"].transform("median"))
+test['Fare'] = test["Fare"].fillna(test.groupby("Pclass")["Fare"].transform("median"))
+
+train['Embarked'] = train['Embarked'].fillna('S')
+test['Embarked'] = test['Embarked'].fillna('S')
+```
+
+
+```python
+# Map categorical feature 'Embarke'
+embarked_mapping = {"S": 0, "C": 1, "Q": 2}
+for data in train_test:
+    data['Embarked'] = data['Embarked'].map(embarked_mapping)
+```
+
+
+```python
+#Remove 'Cabin' column, too many missing values
+train.drop(columns=['Cabin', 'Name'], inplace = True)
+test.drop(columns=['Cabin', 'Name'], inplace = True)
+```
+
+
+```python
+train.head()
 ```
 
 
@@ -512,94 +626,88 @@ test.head()
     <tr style="text-align: right;">
       <th></th>
       <th>PassengerId</th>
+      <th>Survived</th>
       <th>Pclass</th>
-      <th>Name</th>
       <th>Sex</th>
       <th>Age</th>
       <th>SibSp</th>
       <th>Parch</th>
       <th>Ticket</th>
       <th>Fare</th>
-      <th>Cabin</th>
       <th>Embarked</th>
-      <th>Survived</th>
+      <th>Title</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
-      <td>892</td>
+      <td>1</td>
+      <td>0</td>
       <td>3</td>
-      <td>Kelly, Mr. James</td>
-      <td>male</td>
-      <td>34.5</td>
+      <td>0</td>
+      <td>22.0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>A/5 21171</td>
+      <td>7.2500</td>
       <td>0</td>
       <td>0</td>
-      <td>330911</td>
-      <td>7.8292</td>
-      <td>NaN</td>
-      <td>Q</td>
-      <td></td>
     </tr>
     <tr>
       <th>1</th>
-      <td>893</td>
-      <td>3</td>
-      <td>Wilkes, Mrs. James (Ellen Needs)</td>
-      <td>female</td>
-      <td>47.0</td>
+      <td>2</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>38.0</td>
       <td>1</td>
       <td>0</td>
-      <td>363272</td>
-      <td>7.0000</td>
-      <td>NaN</td>
-      <td>S</td>
-      <td></td>
+      <td>PC 17599</td>
+      <td>71.2833</td>
+      <td>1</td>
+      <td>2</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>894</td>
-      <td>2</td>
-      <td>Myles, Mr. Thomas Francis</td>
-      <td>male</td>
-      <td>62.0</td>
+      <td>3</td>
+      <td>1</td>
+      <td>3</td>
+      <td>1</td>
+      <td>26.0</td>
       <td>0</td>
       <td>0</td>
-      <td>240276</td>
-      <td>9.6875</td>
-      <td>NaN</td>
-      <td>Q</td>
-      <td></td>
+      <td>STON/O2. 3101282</td>
+      <td>7.9250</td>
+      <td>0</td>
+      <td>1</td>
     </tr>
     <tr>
       <th>3</th>
-      <td>895</td>
-      <td>3</td>
-      <td>Wirz, Mr. Albert</td>
-      <td>male</td>
-      <td>27.0</td>
+      <td>4</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>35.0</td>
+      <td>1</td>
       <td>0</td>
+      <td>113803</td>
+      <td>53.1000</td>
       <td>0</td>
-      <td>315154</td>
-      <td>8.6625</td>
-      <td>NaN</td>
-      <td>S</td>
-      <td></td>
+      <td>2</td>
     </tr>
     <tr>
       <th>4</th>
-      <td>896</td>
+      <td>5</td>
+      <td>0</td>
       <td>3</td>
-      <td>Hirvonen, Mrs. Alexander (Helga E Lindqvist)</td>
-      <td>female</td>
-      <td>22.0</td>
-      <td>1</td>
-      <td>1</td>
-      <td>3101298</td>
-      <td>12.2875</td>
-      <td>NaN</td>
-      <td>S</td>
-      <td></td>
+      <td>0</td>
+      <td>35.0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>373450</td>
+      <td>8.0500</td>
+      <td>0</td>
+      <td>0</td>
     </tr>
   </tbody>
 </table>
@@ -607,7 +715,472 @@ test.head()
 
 
 
+#### Scale numerical features
+
+
+```python
+#Scale numerical features
+
+scaler = StandardScaler()
+train['Fare'] = scaler.fit_transform(train[['Fare']])
+test['Fare']  = scaler.fit_transform(test[['Fare']])
+train.head()
+```
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>PassengerId</th>
+      <th>Survived</th>
+      <th>Pclass</th>
+      <th>Sex</th>
+      <th>Age</th>
+      <th>SibSp</th>
+      <th>Parch</th>
+      <th>Ticket</th>
+      <th>Fare</th>
+      <th>Embarked</th>
+      <th>Title</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1</td>
+      <td>0</td>
+      <td>3</td>
+      <td>0</td>
+      <td>22.0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>A/5 21171</td>
+      <td>-0.502445</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>38.0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>PC 17599</td>
+      <td>0.786845</td>
+      <td>1</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>3</td>
+      <td>1</td>
+      <td>3</td>
+      <td>1</td>
+      <td>26.0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>STON/O2. 3101282</td>
+      <td>-0.488854</td>
+      <td>0</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>4</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>35.0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>113803</td>
+      <td>0.420730</td>
+      <td>0</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>5</td>
+      <td>0</td>
+      <td>3</td>
+      <td>0</td>
+      <td>35.0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>373450</td>
+      <td>-0.486337</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+#### Feature engineering
+
+Feature engineering is the process of using domain knowledge to create new features or transform existing features in a dataset to improve the performance of a machine learning model. For the Titanic dataset, which is often used for binary classification (predicting survival or not), feature engineering can significantly impact model performance.
+
+
+```python
+# Create new feature 'Family_size'
+train["FamilySize"] = train["SibSp"] + train["Parch"] + 1
+test["FamilySize"] = test["SibSp"] + test["Parch"] + 1
+
+## Family mapping
+family_mapping = {1: 0, 2: 0.4, 3: 0.8, 4: 1.2, 5: 1.6, 6: 2, 7: 2.4, 8: 2.8, 9: 3.2, 10: 3.6, 11: 4}
+for data in train_test:
+    data['FamilySize'] = data['FamilySize'].map(family_mapping)
+```
+
+
+```python
+# Remove unneccesary columns
+train.drop(columns=['PassengerId','SibSp', 'Parch','Ticket'], inplace=True)
+test.drop(columns=['SibSp', 'Parch','Ticket'], inplace=True )
+```
+
 ### Step 3. Data visualization 
+
+
+```python
+facet = sns.FacetGrid(train, hue="Survived",aspect=4)
+facet.map(sns.kdeplot,'Age',fill= True)
+facet.set(xlim=(0, train['Age'].max()))
+facet.add_legend()
+ 
+plt.show() 
+```
+
+
+    
+![png](Titanic%20Survival%20Prediction%20Model_files/Titanic%20Survival%20Prediction%20Model_32_0.png)
+    
+
+
+
+```python
+facet = sns.FacetGrid(train, hue="Survived",aspect=4)
+facet.map(sns.kdeplot,'FamilySize',fill= True)
+facet.set(xlim=(0, train['FamilySize'].max()))
+facet.add_legend()
+ 
+plt.show() 
+```
+
+
+    
+![png](Titanic%20Survival%20Prediction%20Model_files/Titanic%20Survival%20Prediction%20Model_33_0.png)
+    
+
+
+
+```python
+facet = sns.FacetGrid(train, hue="Survived",aspect=4)
+facet.map(sns.kdeplot,'Fare',fill= True)
+facet.set(xlim=(0, train['Fare'].max()))
+facet.add_legend()
+ 
+plt.show() 
+```
+
+
+    
+![png](Titanic%20Survival%20Prediction%20Model_files/Titanic%20Survival%20Prediction%20Model_34_0.png)
+    
+
+
+### Step 5. Prepare dataset for modeling
+
+For a better evaluation of the model we'll create 3 datasets: for training, cross validation and test.
+
+
+```python
+# Prepare dataset for modeling
+
+X_train = train.drop('Survived', axis=1)
+y_train = train['Survived']
+
+X_train.head()
+```
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Pclass</th>
+      <th>Sex</th>
+      <th>Age</th>
+      <th>Fare</th>
+      <th>Embarked</th>
+      <th>Title</th>
+      <th>FamilySize</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>3</td>
+      <td>0</td>
+      <td>22.0</td>
+      <td>-0.502445</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.4</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>1</td>
+      <td>1</td>
+      <td>38.0</td>
+      <td>0.786845</td>
+      <td>1</td>
+      <td>2</td>
+      <td>0.4</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>3</td>
+      <td>1</td>
+      <td>26.0</td>
+      <td>-0.488854</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>1</td>
+      <td>1</td>
+      <td>35.0</td>
+      <td>0.420730</td>
+      <td>0</td>
+      <td>2</td>
+      <td>0.4</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>3</td>
+      <td>0</td>
+      <td>35.0</td>
+      <td>-0.486337</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.0</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
+```python
+X_train.shape, y_train.shape
+```
+
+
+
+
+    ((891, 7), (891,))
+
+
+
+### Step 6. Moddeling
+
+* Import libraries
+* Cross validation
+* Decision Tree Model
+* Random Forest Model
+* Evaluate each model
+
+
+```python
+# Importing Classifiers
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+
+## Import K-Fold Cross-Validation
+from sklearn.model_selection import KFold
+from sklearn.model_selection import cross_val_score
+k_fold = KFold(n_splits=10, shuffle=True, random_state=0)
+```
+
+#### Random Forest Algorithm
+
+
+```python
+clf = RandomForestClassifier(n_estimators = 13)
+scoring = 'accuracy'
+score = cross_val_score(clf, X_train, y_train, cv=k_fold, n_jobs=1, scoring=scoring)
+print(score)
+```
+
+    [0.82222222 0.88764045 0.79775281 0.80898876 0.85393258 0.76404494
+     0.82022472 0.83146067 0.82022472 0.82022472]
+    
+
+
+```python
+# Evaluate Random Forest: Score
+round(np.mean(score)*100, 2)
+```
+
+
+
+
+    82.27
+
+
+
+#### Decision Tree Algorithm 
+
+
+```python
+clf = DecisionTreeClassifier()
+scoring = 'accuracy'
+score = cross_val_score(clf, X_train, y_train, cv=k_fold, n_jobs=1, scoring=scoring)
+print(score)
+```
+
+    [0.77777778 0.88764045 0.7752809  0.73033708 0.78651685 0.83146067
+     0.79775281 0.82022472 0.83146067 0.74157303]
+    
+
+
+```python
+# Evaluate Decision Tree: Score
+round(np.mean(score)*100, 2)
+```
+
+
+
+
+    79.8
+
+
+
+### Step 7. Testing
+
+
+```python
+clf = RandomForestClassifier(n_estimators = 13)
+clf.fit(X_train, y_train)
+
+test_data = test.drop('PassengerId', axis=1)
+prediction = clf.predict(test_data)
+```
+
+
+```python
+submission = pd.DataFrame({
+        "PassengerId": test["PassengerId"],
+        "Survived": prediction
+    })
+
+submission.to_csv('submission.csv', index=False)
+```
+
+
+```python
+submission = pd.read_csv('submission.csv')
+submission.head()
+```
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>PassengerId</th>
+      <th>Survived</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>892</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>893</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>894</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>895</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>896</td>
+      <td>1</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
 
 
 ```python
