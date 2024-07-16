@@ -1,3 +1,13 @@
+# Titanic: Machine Learning from Disaster
+
+* **Load Dataset**
+* **Feature engineering and data preproccessing**
+* **Data visualization**
+* **Prepare dataset for modeling**
+* **Modeling**
+* **Testing**
+
+
 ```python
 import numpy as np 
 import pandas as pd
@@ -468,12 +478,18 @@ train.isnull().sum()
 
 We can see that Age values is missing for 177 rows from training set, Cabin values are also missing in many rows, 687 and 2 rows missing Embarked information.
 
-#### Bar chart for categorical features
-* Sex
-* Embarked
-* PClass
-* SibSp
-* Parch( # of parents and children)
+
+```python
+bar_chart('Sex')
+```
+
+
+    
+![png](Titanic%20Survival%20Prediction%20Model_files/Titanic%20Survival%20Prediction%20Model_12_0.png)
+    
+
+
+The Chart confirms **Women** more likely survivied than **Men**
 
 
 ```python
@@ -487,25 +503,12 @@ def bar_chart(feature):
 
 
 ```python
-bar_chart('Sex')
-```
-
-
-    
-![png](Titanic%20Survival%20Prediction%20Model_files/Titanic%20Survival%20Prediction%20Model_11_0.png)
-    
-
-
-The Chart confirms **Women** more likely survivied than **Men**
-
-
-```python
 bar_chart('Pclass')
 ```
 
 
     
-![png](Titanic%20Survival%20Prediction%20Model_files/Titanic%20Survival%20Prediction%20Model_13_0.png)
+![png](Titanic%20Survival%20Prediction%20Model_files/Titanic%20Survival%20Prediction%20Model_15_0.png)
     
 
 
@@ -520,7 +523,7 @@ bar_chart('SibSp')
 
 
     
-![png](Titanic%20Survival%20Prediction%20Model_files/Titanic%20Survival%20Prediction%20Model_15_0.png)
+![png](Titanic%20Survival%20Prediction%20Model_files/Titanic%20Survival%20Prediction%20Model_17_0.png)
     
 
 
@@ -535,7 +538,7 @@ bar_chart('Parch')
 
 
     
-![png](Titanic%20Survival%20Prediction%20Model_files/Titanic%20Survival%20Prediction%20Model_17_0.png)
+![png](Titanic%20Survival%20Prediction%20Model_files/Titanic%20Survival%20Prediction%20Model_19_0.png)
     
 
 
@@ -586,10 +589,17 @@ test['Embarked'] = test['Embarked'].fillna('S')
 
 
 ```python
-# Map categorical feature 'Embarke'
-embarked_mapping = {"S": 0, "C": 1, "Q": 2}
-for data in train_test:
-    data['Embarked'] = data['Embarked'].map(embarked_mapping)
+# Median imputation for 'Age'
+test['Age'] = test['Age'].fillna(train.groupby(['Sex', 'Pclass'])['Age'].transform('median'))
+test['Fare'] = test["Fare"].fillna(test.groupby("Pclass")["Fare"].transform("median"))
+
+#Remove 'Cabin' column, too many missing values
+test.drop(columns=['Cabin'], inplace = True)
+
+#Fill missing values to 'Embarked' with mode
+test['Embarked'] = test['Embarked'].fillna(test['Embarked'].mode()[0])
+
+test.isnull().sum()
 ```
 
 
@@ -875,7 +885,7 @@ plt.show()
 
 
     
-![png](Titanic%20Survival%20Prediction%20Model_files/Titanic%20Survival%20Prediction%20Model_32_0.png)
+![png](Titanic%20Survival%20Prediction%20Model_files/Titanic%20Survival%20Prediction%20Model_34_0.png)
     
 
 
@@ -891,7 +901,7 @@ plt.show()
 
 
     
-![png](Titanic%20Survival%20Prediction%20Model_files/Titanic%20Survival%20Prediction%20Model_33_0.png)
+![png](Titanic%20Survival%20Prediction%20Model_files/Titanic%20Survival%20Prediction%20Model_35_0.png)
     
 
 
@@ -907,7 +917,7 @@ plt.show()
 
 
     
-![png](Titanic%20Survival%20Prediction%20Model_files/Titanic%20Survival%20Prediction%20Model_34_0.png)
+![png](Titanic%20Survival%20Prediction%20Model_files/Titanic%20Survival%20Prediction%20Model_36_0.png)
     
 
 
@@ -918,11 +928,372 @@ For a better evaluation of the model we'll create 3 datasets: for training, cros
 
 ```python
 # Prepare dataset for modeling
-
 X_train = train.drop('Survived', axis=1)
 y_train = train['Survived']
+```
 
-X_train.head()
+
+```python
+X_test = test.drop('PassengerId', axis=1)
+y_test = pd.read_csv("input/gender_submission.csv")
+y_test = y_test.drop('PassengerId', axis=1)
+
+X_test, y_test
+```
+
+
+
+
+    (     Pclass  Sex   Age      Fare  Embarked  Title  FamilySize
+     0         3    0  34.5 -0.497071         2      0         0.0
+     1         3    1  47.0 -0.511934         0      2         0.4
+     2         2    0  62.0 -0.463762         2      0         0.0
+     3         3    0  27.0 -0.482135         0      0         0.0
+     4         3    1  22.0 -0.417159         0      2         0.8
+     ..      ...  ...   ...       ...       ...    ...         ...
+     413       3    0  25.0 -0.493113         0      0         0.0
+     414       1    1  39.0  1.314555         1      3         0.0
+     415       3    0  38.5 -0.507453         0      0         0.0
+     416       3    0  25.0 -0.493113         0      0         0.0
+     417       3    0   7.0 -0.236647         1      3         0.8
+     
+     [418 rows x 7 columns],
+          Survived
+     0           0
+     1           1
+     2           0
+     3           0
+     4           1
+     ..        ...
+     413         0
+     414         1
+     415         0
+     416         0
+     417         0
+     
+     [418 rows x 1 columns])
+
+
+
+### Step 6. Moddeling
+
+* Import libraries
+* Cross validation
+* Decision Tree Model
+* Random Forest Model
+* Evaluate each model
+
+
+```python
+# Importing Classifiers
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from xgboost import XGBClassifier
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+
+from sklearn.model_selection import KFold, cross_val_score, GridSearchCV
+from sklearn.metrics import precision_score, recall_score, f1_score
+```
+
+
+```python
+k_fold = KFold(n_splits=10, shuffle=True, random_state=0)
+scoring = 'accuracy'
+```
+
+#### Random Forest Algorithm
+
+
+```python
+# Define the parameter grid
+param_grid_rf = {
+    'n_estimators': [10, 20, 50],
+    'max_features': ['sqrt', 'log2'],
+    'max_depth': [3, 4, 5, 6, 7, 8, 10, 11],
+    'criterion': ['gini', 'entropy']
+}
+
+# Create the RandomForestClassifier
+rf = RandomForestClassifier()
+
+# Set up GridSearchCV with KFold
+grid_search = GridSearchCV(estimator=rf, param_grid=param_grid_rf, cv=k_fold, scoring='accuracy', n_jobs=-1)
+
+# Fit the model
+grid_search.fit(X_train, y_train)
+best_clf_rf = grid_search.best_estimator_
+
+# Make predictions
+y_pred = best_clf_rf.predict(X_test)
+```
+
+
+```python
+# Evaluate Random Forest
+average_method = 'micro'  # Change as needed
+print("Precision: ", precision_score(y_test, y_pred, average='binary'))
+print("Recall: ", recall_score(y_test, y_pred, average='binary'))
+print("F1 Score: ", f1_score(y_test, y_pred, average='binary'))
+
+score = cross_val_score(best_clf_rf, X_train, y_train, cv=k_fold, n_jobs=1, scoring=scoring)
+round(np.mean(score)*100, 2)
+```
+
+    Precision:  0.881578947368421
+    Recall:  0.881578947368421
+    F1 Score:  0.881578947368421
+    
+
+
+
+
+    83.5
+
+
+
+#### Decision Tree Algorithm 
+
+
+```python
+# Define the parameter grid for GridSearchCV
+param_grid_dt = {
+    'criterion': ['gini', 'entropy'],
+    'max_depth': [None, 10, 20, 30,40],
+    'min_samples_split': [2, 5, 10, 20],
+    'min_samples_leaf': [1, 5, 10, 20, 50]
+}
+
+# Create the DecisionTreeClassifier
+dt = DecisionTreeClassifier()
+
+# Set up GridSearchCV with KFold
+grid_search = GridSearchCV(estimator=dt, param_grid=param_grid_dt, cv=k_fold, scoring='accuracy', n_jobs=-1)
+
+# Fit the model
+grid_search.fit(X_train, y_train)
+best_clf_dt = grid_search.best_estimator_
+
+# Make predictions
+y_pred = best_clf_dt.predict(X_test)
+```
+
+
+```python
+# Evaluate Decision Tree
+average_method = 'macro'  # Change as needed
+print("Precision: ", precision_score(y_test, y_pred, average='binary'))
+print("Recall: ", recall_score(y_test, y_pred, average='binary'))
+print("F1 Score: ", f1_score(y_test, y_pred, average='binary'))
+
+score = cross_val_score(best_clf_dt, X_train, y_train, cv=k_fold, n_jobs=1, scoring=scoring)
+round(np.mean(score)*100, 2)
+```
+
+    Precision:  0.8627450980392157
+    Recall:  0.868421052631579
+    F1 Score:  0.8655737704918033
+    
+
+
+
+
+    83.28
+
+
+
+#### Logistic Regression
+
+
+```python
+param_grid_lr = {
+    'C': [0.01, 0.1, 1, 10, 100],
+    'penalty': ['l1', 'l2'],
+    'solver': ['liblinear']  # 'liblinear' is used for small datasets, and supports 'l1' penalty
+}
+
+# Create the Logistic Regression model
+lr = LogisticRegression()
+
+# Set up GridSearchCV with KFold
+grid_search_lr = GridSearchCV(estimator=lr, param_grid=param_grid_lr, cv=k_fold, scoring='accuracy', n_jobs=-1)
+
+# Fit the model
+grid_search_lr.fit(X_train, y_train)
+best_clf_lr = grid_search_lr.best_estimator_
+
+# Make predictions
+y_pred_lr = best_clf_lr.predict(X_test)
+
+# Evaluate Logistic Regression
+print("Logistic Regression Evaluation:")
+print("Precision: ", precision_score(y_test, y_pred_lr, average='binary'))
+print("Recall: ", recall_score(y_test, y_pred_lr, average='binary'))
+print("F1 Score: ", f1_score(y_test, y_pred_lr, average='binary'))
+
+score = cross_val_score(best_clf_lr, X_train, y_train, cv=k_fold, n_jobs=1, scoring=scoring)
+round(np.mean(score)*100, 2)
+```
+
+    Logistic Regression Evaluation:
+    Precision:  0.8895705521472392
+    Recall:  0.9539473684210527
+    F1 Score:  0.9206349206349206
+    
+
+
+
+
+    81.82
+
+
+
+#### XGBoost Classifier
+
+
+```python
+# Define a refined parameter grid for XGBoost
+param_grid_xgb_refined = {
+    'n_estimators': [10, 15],    # Fine-tune this range based on initial results
+    'max_depth': [4, 5, 6, 7, 8],           # Choose values around the best performing ones
+    'learning_rate': [0.01, 0.05, 0.1, 0.2], # Try different learning rates
+    'subsample': [0.8, 0.9, 1.0],           # Try different subsampling ratios
+    'colsample_bytree': [0.8, 0.9, 1.0]     # Try different column sampling ratios
+}
+
+# Create the XGBClassifier
+xgb = XGBClassifier(eval_metric='logloss')
+
+# Set up GridSearchCV with KFold
+grid_search_xgb = GridSearchCV(estimator=xgb, param_grid=param_grid_xgb, cv=k_fold, scoring='accuracy', n_jobs=-1)
+
+# Fit the model
+grid_search_xgb.fit(X_train, y_train)
+best_clf_xgb = grid_search_xgb.best_estimator_
+
+# Make predictions
+y_pred_xgb = best_clf_xgb.predict(X_test)
+```
+
+
+```python
+# Evaluate XGBoost
+print("XGBoost Evaluation:")
+print("Precision: ", precision_score(y_test, y_pred_xgb, average='binary'))
+print("Recall: ", recall_score(y_test, y_pred_xgb, average='binary'))
+print("F1 Score: ", f1_score(y_test, y_pred_xgb, average='binary'))
+
+score = cross_val_score(best_clf_lr, X_train, y_train, cv=k_fold, n_jobs=1, scoring=scoring)
+round(np.mean(score)*100, 2)
+```
+
+    XGBoost Evaluation:
+    Precision:  0.868421052631579
+    Recall:  0.868421052631579
+    F1 Score:  0.868421052631579
+    
+
+
+
+
+    81.82
+
+
+
+#### SVM
+
+
+```python
+# Create the SVM classifier
+svm = SVC()
+# Fit the model
+svm.fit(X_train, y_train)
+
+# Make predictions
+y_pred_svm = svm.predict(X_test)
+```
+
+
+```python
+# Evaluate SVM
+print("SVM Evaluation:")
+print("Precision: ", precision_score(y_test, y_pred_svm, average='binary'))
+print("Recall: ", recall_score(y_test, y_pred_svm, average='binary'))
+print("F1 Score: ", f1_score(y_test, y_pred_svm, average='binary'))
+
+score = cross_val_score(svm, X_train, y_train, cv=k_fold, n_jobs=1, scoring=scoring)
+round(np.mean(score)*100, 2)
+```
+
+    SVM Evaluation:
+    Precision:  0.7340425531914894
+    Recall:  0.45394736842105265
+    F1 Score:  0.5609756097560976
+    
+
+
+
+
+    74.19
+
+
+
+#### KNN (K-Nearest Neighbors)
+
+
+```python
+# Define the parameter grid for KNN
+param_grid_knn = {
+    'n_neighbors': [3, 5, 7, 9, 11],
+    'weights': ['uniform', 'distance'],
+    'metric': ['euclidean', 'manhattan', 'minkowski']
+}
+
+# Create the KNN classifier
+knn = KNeighborsClassifier()
+
+# Set up GridSearchCV with StratifiedKFold
+grid_search_knn = GridSearchCV(estimator=knn, param_grid=param_grid_knn, cv=k_fold, scoring='accuracy', n_jobs=-1)
+
+# Fit the model
+grid_search_knn.fit(X_train, y_train)
+best_clf_knn = grid_search_knn.best_estimator_
+
+# Make predictions
+y_pred_knn = best_clf_knn.predict(X_test)
+```
+
+
+```python
+# Evaluate KNN
+print("KNN Evaluation:")
+print("Precision: ", precision_score(y_test, y_pred_knn, average='binary'))
+print("Recall: ", recall_score(y_test, y_pred_knn, average='binary'))
+print("F1 Score: ", f1_score(y_test, y_pred_knn, average='binary'))
+
+score = cross_val_score(best_clf_knn, X_train, y_train, cv=k_fold, n_jobs=1, scoring=scoring)
+round(np.mean(score)*100, 2)
+```
+
+    KNN Evaluation:
+    Precision:  0.7417218543046358
+    Recall:  0.7368421052631579
+    F1 Score:  0.7392739273927392
+    
+
+
+
+
+    81.48
+
+
+
+### Step 7. Testing
+
+
+```python
+X_test.head()
 ```
 
 
@@ -960,51 +1331,51 @@ X_train.head()
       <th>0</th>
       <td>3</td>
       <td>0</td>
-      <td>22.0</td>
-      <td>-0.502445</td>
+      <td>34.5</td>
+      <td>-0.497071</td>
+      <td>2</td>
       <td>0</td>
-      <td>0</td>
-      <td>0.4</td>
+      <td>0.0</td>
     </tr>
     <tr>
       <th>1</th>
+      <td>3</td>
       <td>1</td>
-      <td>1</td>
-      <td>38.0</td>
-      <td>0.786845</td>
-      <td>1</td>
+      <td>47.0</td>
+      <td>-0.511934</td>
+      <td>0</td>
       <td>2</td>
       <td>0.4</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>3</td>
-      <td>1</td>
-      <td>26.0</td>
-      <td>-0.488854</td>
+      <td>2</td>
       <td>0</td>
-      <td>1</td>
+      <td>62.0</td>
+      <td>-0.463762</td>
+      <td>2</td>
+      <td>0</td>
       <td>0.0</td>
     </tr>
     <tr>
       <th>3</th>
-      <td>1</td>
-      <td>1</td>
-      <td>35.0</td>
-      <td>0.420730</td>
+      <td>3</td>
       <td>0</td>
-      <td>2</td>
-      <td>0.4</td>
+      <td>27.0</td>
+      <td>-0.482135</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.0</td>
     </tr>
     <tr>
       <th>4</th>
       <td>3</td>
+      <td>1</td>
+      <td>22.0</td>
+      <td>-0.417159</td>
       <td>0</td>
-      <td>35.0</td>
-      <td>-0.486337</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0.0</td>
+      <td>2</td>
+      <td>0.8</td>
     </tr>
   </tbody>
 </table>
@@ -1014,99 +1385,7 @@ X_train.head()
 
 
 ```python
-X_train.shape, y_train.shape
-```
-
-
-
-
-    ((891, 7), (891,))
-
-
-
-### Step 6. Moddeling
-
-* Import libraries
-* Cross validation
-* Decision Tree Model
-* Random Forest Model
-* Evaluate each model
-
-
-```python
-# Importing Classifiers
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
-
-## Import K-Fold Cross-Validation
-from sklearn.model_selection import KFold
-from sklearn.model_selection import cross_val_score
-k_fold = KFold(n_splits=10, shuffle=True, random_state=0)
-```
-
-#### Random Forest Algorithm
-
-
-```python
-clf = RandomForestClassifier(n_estimators = 13)
-scoring = 'accuracy'
-score = cross_val_score(clf, X_train, y_train, cv=k_fold, n_jobs=1, scoring=scoring)
-print(score)
-```
-
-    [0.82222222 0.88764045 0.79775281 0.80898876 0.85393258 0.76404494
-     0.82022472 0.83146067 0.82022472 0.82022472]
-    
-
-
-```python
-# Evaluate Random Forest: Score
-round(np.mean(score)*100, 2)
-```
-
-
-
-
-    82.27
-
-
-
-#### Decision Tree Algorithm 
-
-
-```python
-clf = DecisionTreeClassifier()
-scoring = 'accuracy'
-score = cross_val_score(clf, X_train, y_train, cv=k_fold, n_jobs=1, scoring=scoring)
-print(score)
-```
-
-    [0.77777778 0.88764045 0.7752809  0.73033708 0.78651685 0.83146067
-     0.79775281 0.82022472 0.83146067 0.74157303]
-    
-
-
-```python
-# Evaluate Decision Tree: Score
-round(np.mean(score)*100, 2)
-```
-
-
-
-
-    79.8
-
-
-
-### Step 7. Testing
-
-
-```python
-clf = RandomForestClassifier(n_estimators = 13)
-clf.fit(X_train, y_train)
-
-test_data = test.drop('PassengerId', axis=1)
-prediction = clf.predict(test_data)
+prediction = best_clf_knn.predict(X_test)
 ```
 
 
@@ -1159,7 +1438,7 @@ submission.head()
     <tr>
       <th>1</th>
       <td>893</td>
-      <td>1</td>
+      <td>0</td>
     </tr>
     <tr>
       <th>2</th>
@@ -1174,13 +1453,18 @@ submission.head()
     <tr>
       <th>4</th>
       <td>896</td>
-      <td>1</td>
+      <td>0</td>
     </tr>
   </tbody>
 </table>
 </div>
 
 
+
+
+```python
+
+```
 
 
 ```python
